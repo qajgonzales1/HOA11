@@ -1,7 +1,7 @@
 ---
 - hosts: all
   become: true
-  tasks: 
+  tasks:
     - name: Install Docker for Ubuntu
       apt:
         name: docker.io
@@ -29,12 +29,18 @@
       copy:
         content: |
           FROM ubuntu:latest
-          
+
           RUN apt-get update && \
               apt-get install -y apache2 mysql-server
-          
+
           EXPOSE 80 3306
- 
+
           CMD ["apache2ctl", "-D", "FOREGROUND]
         dest: /home/gonzales/Dockerfile
-      when: ansible_distribution == 'CentOS'  
+      when: ansible_distribution == 'CentOS'
+
+    - name: Install and build Dockerfile using Ansible
+      docker_image:
+        path: /home/{{ ansible_user }}/Dockerfile
+        name: myimage
+        source: build

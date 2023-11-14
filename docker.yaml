@@ -1,0 +1,74 @@
+---
+- name: Install Docker and build Dockerfile
+  hosts: all
+  become: true
+  tasks:
+
+    - name: Install Docker on Ubuntu
+      apt:
+        name: docker.io
+        state: present
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Install Docker on CentOS
+      yum:
+        name: docker
+        state: present
+      when: ansible_distribution == 'CentOS'
+
+    - name: Enable Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Create Docker group if it doesn't exist
+      group:
+        name: docker
+        state: present
+
+    - name: Add current user to Docker group
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    - name: Create Dockerfile
+      copy:
+        content: |
+          FROM ubuntu:latest
+
+          RUN apt-get update && apt-get install -y \
+              apache2 \
+              mysql-server \
+              # Other packages needed
+
+          CMD ["service", "apache2", "start"]
+          CMD ["service", "mysql", "start"]
+        dest: /home/gonzales/Dockerfile
+      when: ansible_distribution == 'Ubuntu'
+
+    - name: Create Dockerfile
+      copy:
+        content: |
+          FROM centos:latest
+
+          RUN yum install -y \
+              httpd \
+              mariadb-server \
+              # Other packages needed
+
+          CMD ["systemctl", "start", "httpd"]
+          CMD ["systemctl", "start", "mariadb"]
+        dest: /home/gonzales/Dockerfile
+      when: ansible_distribution == 'CentOS'
+
+
+    - name: Install and build Dockerfile using Ansible
+      dockerimage:
+        path: /home/gonzales/Dockerfile
+        name: myimage
+        source: build
+        build:
+          path: /home/gonzales
+
